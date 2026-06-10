@@ -91,18 +91,26 @@ class AdminMenu
         }
 
         $fields = MemberData::get_all_registration_fields();
-        echo '<div class="wrap wp-org-admin"><div class="wp-org-admin-hero"><div><h1>Field Formulir</h1><p>Atur struktur form pendaftaran tanpa perlu mengubah kode frontend.</p></div></div><div class="wp-org-admin-card"><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<div class="wrap wp-org-admin"><div class="wp-org-admin-hero"><div><h1>Field Formulir</h1><p>Atur struktur form pendaftaran tanpa perlu mengubah kode frontend.</p></div></div><div class="wp-org-admin-summary">';
+        echo '<div class="wp-org-admin-stat"><span class="wp-org-admin-stat-label">Total Field</span><strong>' . esc_html((string) count($fields)) . '</strong></div>';
+        echo '<div class="wp-org-admin-stat"><span class="wp-org-admin-stat-label">Field Aktif</span><strong>' . esc_html((string) count(array_filter($fields, static function ($field) {
+            return !empty($field['enabled']);
+        }))) . '</strong></div>';
+        echo '<div class="wp-org-admin-stat"><span class="wp-org-admin-stat-label">Field Wajib</span><strong>' . esc_html((string) count(array_filter($fields, static function ($field) {
+            return !empty($field['required']);
+        }))) . '</strong></div>';
+        echo '</div><div class="wp-org-admin-card"><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('wp_org_save_fields');
         echo '<input type="hidden" name="action" value="wp_org_save_fields">';
-        echo '<p class="description">Tambah, hapus, aktifkan, atau nonaktifkan field pendaftaran. Field nonaktif tetap tersimpan tetapi tidak ditampilkan di frontend.</p>';
-        echo '<div class="wp-org-admin-table-card"><table class="widefat striped wp-org-fields-table wp-org-admin-table"><thead><tr><th>Key</th><th>Label</th><th>Tipe</th><th>Opsi</th><th>Wajib</th><th>Aktif</th><th>Aksi</th></tr></thead><tbody data-next-index="' . esc_attr((string) count($fields)) . '">';
+        echo '<div class="wp-org-admin-fields-toolbar"><div><h2>Daftar Field</h2><p class="description">Tambah, hapus, aktifkan, atau nonaktifkan field pendaftaran. Field nonaktif tetap tersimpan tetapi tidak ditampilkan di frontend.</p></div><button type="button" class="button button-secondary" id="wp-org-add-field">Tambah Field</button></div>';
+        echo '<div class="wp-org-admin-note"><strong>Panduan cepat:</strong> isi <code>Label</code> seperti biasa, lalu sistem akan membuat <code>key</code> otomatis dalam format underscore. Kolom <code>opsi</code> hanya dipakai untuk field pilihan.</div>';
+        echo '<div class="wp-org-admin-table-card"><table class="widefat striped wp-org-fields-table wp-org-admin-table"><thead><tr><th>Label</th><th>Tipe</th><th>Opsi</th><th>Wajib</th><th>Aktif</th><th>Aksi</th></tr></thead><tbody data-next-index="' . esc_attr((string) count($fields)) . '">';
 
         foreach ($fields as $index => $field) {
             echo $this->render_field_row($index, $field);
         }
 
         echo '</tbody></table></div>';
-        echo '<p><button type="button" class="button" id="wp-org-add-field">Tambah Field</button></p>';
         echo '<script type="text/html" id="tmpl-wp-org-field-row">' . $this->render_field_row('__index__', [
             'key' => '',
             'label' => '',
@@ -508,12 +516,45 @@ class AdminMenu
             return;
         }
 
-        wp_add_inline_style('wp-admin', '.wp-org-admin{max-width:1380px;margin-top:18px}.wp-org-admin-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:0 0 18px;padding:24px 28px;border:1px solid #d8e1ea;border-radius:20px;background:linear-gradient(135deg,#f8fbff 0%,#eef5fb 100%);box-shadow:0 14px 34px rgba(17,52,82,.06)}.wp-org-admin-hero h1{margin:0 0 6px;font-size:28px;line-height:1.15}.wp-org-admin-hero p{margin:0;color:#536170;max-width:720px}.wp-org-admin-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}.wp-org-admin-stat,.wp-org-admin-card{background:#fff;border:1px solid #d8e1ea;border-radius:18px;box-shadow:0 10px 24px rgba(17,52,82,.05)}.wp-org-admin-stat{padding:18px 20px}.wp-org-admin-stat strong{display:block;margin-top:8px;font-size:28px;line-height:1.1;color:#0f3d5e}.wp-org-admin-stat-label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b}.wp-org-admin-card{padding:22px 24px}.wp-org-admin-table-card{overflow:auto;padding:0}.wp-org-admin-table{border:none}.wp-org-admin-table thead th{padding:14px 16px;background:#f7fafc;border-bottom:1px solid #d8e1ea;color:#334155}.wp-org-admin-table tbody td{padding:16px;vertical-align:top}.wp-org-admin-inline-form{display:grid;gap:10px}.wp-org-admin-inline-form select,.wp-org-admin-inline-form input[type=\"text\"],.wp-org-fields-table input[type=\"text\"],.wp-org-fields-table select,.wp-org-fields-table textarea,.wp-org-bank-table input[type=\"text\"]{width:100%;max-width:none}.wp-org-fields-table textarea{min-height:64px}.wp-org-field-row-disabled{opacity:.6}.wp-org-admin-badge{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.2}.wp-org-admin-badge-approved,.wp-org-admin-badge-premium-active{background:#dcfce7;color:#166534}.wp-org-admin-badge-pending,.wp-org-admin-badge-premium-pending{background:#fef3c7;color:#92400e}.wp-org-admin-badge-rejected,.wp-org-admin-badge-premium-rejected{background:#fee2e2;color:#991b1b}.wp-org-admin-badge-premium-none{background:#e2e8f0;color:#334155}.wp-org-admin-subtle{color:#64748b}.wp-org-admin-link{text-decoration:none}.wp-org-admin-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding:0;border-bottom:0}.wp-org-admin-tabs .nav-tab{margin:0;border:1px solid #d8e1ea;border-radius:999px;background:#fff;color:#334155}.wp-org-admin-tabs .nav-tab-active{background:#0f3d5e;border-color:#0f3d5e;color:#fff}.wp-org-admin-docs{max-width:980px}.wp-org-admin .form-table th{width:220px;color:#0f172a}.wp-org-admin .form-table td,.wp-org-admin .form-table th{padding-top:18px;padding-bottom:18px}.wp-org-admin .button.button-secondary,.wp-org-admin .button{border-radius:10px}.wp-org-admin .button-primary{border-radius:10px;background:#0f3d5e;border-color:#0f3d5e}.wp-org-admin .submit{margin-bottom:0;padding-bottom:0}.wp-org-admin-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(15,23,42,.48);z-index:100000}.wp-org-admin-modal.is-open{display:flex}.wp-org-admin-modal-dialog{width:min(640px,100%);max-height:calc(100vh - 48px);overflow:auto;padding:24px;border-radius:20px;background:#fff;box-shadow:0 28px 70px rgba(15,23,42,.28)}.wp-org-admin-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.wp-org-admin-modal-header h3{margin:0 0 4px;font-size:22px;line-height:1.2}.wp-org-admin-modal-close{border:0;background:transparent;font-size:26px;line-height:1;cursor:pointer;color:#64748b}.wp-org-admin-modal-grid{display:grid;gap:16px}.wp-org-admin-modal-section{padding:18px;border:1px solid #e2e8f0;border-radius:16px;background:#f8fafc}.wp-org-admin-modal-section h4{margin:0 0 12px;font-size:15px}.wp-org-admin-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.wp-org-admin-open-modal{white-space:nowrap}@media (max-width:960px){.wp-org-admin-hero{padding:20px}.wp-org-admin-card{padding:18px}.wp-org-admin .form-table,.wp-org-admin .form-table tbody,.wp-org-admin .form-table tr,.wp-org-admin .form-table th,.wp-org-admin .form-table td{display:block;width:100%}.wp-org-admin .form-table th{padding-bottom:6px}.wp-org-admin .form-table td{padding-top:0}.wp-org-admin-modal{padding:14px}.wp-org-admin-modal-dialog{padding:18px}}');
-        wp_add_inline_script('jquery-core', <<<'JS'
+        wp_add_inline_style('wp-admin', '.wp-org-admin{max-width:1380px;margin-top:18px}.wp-org-admin-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:0 0 18px;padding:24px 28px;border:1px solid #d8e1ea;border-radius:20px;background:linear-gradient(135deg,#f8fbff 0%,#eef5fb 100%);box-shadow:0 14px 34px rgba(17,52,82,.06)}.wp-org-admin-hero h1{margin:0 0 6px;font-size:28px;line-height:1.15}.wp-org-admin-hero p{margin:0;color:#536170;max-width:720px}.wp-org-admin-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}.wp-org-admin-stat,.wp-org-admin-card{background:#fff;border:1px solid #d8e1ea;border-radius:18px;box-shadow:0 10px 24px rgba(17,52,82,.05)}.wp-org-admin-stat{padding:18px 20px}.wp-org-admin-stat strong{display:block;margin-top:8px;font-size:28px;line-height:1.1;color:#0f3d5e}.wp-org-admin-stat-label{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b}.wp-org-admin-card{padding:22px 24px}.wp-org-admin-table-card{overflow:auto;padding:0}.wp-org-admin-table{border:none}.wp-org-admin-table thead th{padding:14px 16px;background:#f7fafc;border-bottom:1px solid #d8e1ea;color:#334155}.wp-org-admin-table tbody td{padding:16px;vertical-align:top}.wp-org-admin-inline-form{display:grid;gap:10px}.wp-org-admin-inline-form select,.wp-org-admin-inline-form input[type=\"text\"],.wp-org-fields-table input[type=\"text\"],.wp-org-fields-table select,.wp-org-fields-table textarea,.wp-org-bank-table input[type=\"text\"]{width:100%;max-width:none}.wp-org-fields-table textarea{min-height:88px;resize:vertical}.wp-org-fields-table tbody tr:nth-child(even){background:#fcfdff}.wp-org-fields-table td:first-child{min-width:300px}.wp-org-fields-table td:nth-child(2){min-width:170px}.wp-org-fields-table td:nth-child(3){min-width:260px}.wp-org-fields-table td:nth-child(4),.wp-org-fields-table td:nth-child(5){min-width:110px}.wp-org-field-options-cell.is-hidden .wp-org-field-options-wrap{display:none}.wp-org-field-options-cell.is-hidden{background:transparent}.wp-org-field-options-cell.is-hidden::after{content:\"-\";display:inline-block;color:#94a3b8;font-weight:700}.wp-org-admin-fields-toolbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}.wp-org-admin-fields-toolbar h2{margin:0 0 6px;font-size:22px;line-height:1.2}.wp-org-admin-fields-toolbar .description{margin:0;max-width:760px}.wp-org-admin-note{margin-bottom:18px;padding:14px 16px;border:1px solid #dbe7f1;border-radius:14px;background:#f8fbfe;color:#415466}.wp-org-admin-help{margin:8px 0 0;font-size:12px;line-height:1.4;color:#64748b}.wp-org-admin-field-id{margin:8px 0 0;font-size:12px;line-height:1.4;color:#94a3b8}.wp-org-admin-switch{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:#334155}.wp-org-admin-switch input[type=\"checkbox\"]{margin:0}.wp-org-field-row-disabled{opacity:.58}.wp-org-admin-badge{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.2}.wp-org-admin-badge-approved,.wp-org-admin-badge-premium-active{background:#dcfce7;color:#166534}.wp-org-admin-badge-pending,.wp-org-admin-badge-premium-pending{background:#fef3c7;color:#92400e}.wp-org-admin-badge-rejected,.wp-org-admin-badge-premium-rejected{background:#fee2e2;color:#991b1b}.wp-org-admin-badge-premium-none{background:#e2e8f0;color:#334155}.wp-org-admin-subtle{color:#64748b}.wp-org-admin-link{text-decoration:none}.wp-org-admin-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding:0;border-bottom:0}.wp-org-admin-tabs .nav-tab{margin:0;border:1px solid #d8e1ea;border-radius:999px;background:#fff;color:#334155}.wp-org-admin-tabs .nav-tab-active{background:#0f3d5e;border-color:#0f3d5e;color:#fff}.wp-org-admin-docs{max-width:980px}.wp-org-admin .form-table th{width:220px;color:#0f172a}.wp-org-admin .form-table td,.wp-org-admin .form-table th{padding-top:18px;padding-bottom:18px}.wp-org-admin .button.button-secondary,.wp-org-admin .button{border-radius:10px}.wp-org-admin .button-primary{border-radius:10px;background:#0f3d5e;border-color:#0f3d5e}.wp-org-admin .submit{margin-bottom:0;padding-bottom:0}.wp-org-admin-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(15,23,42,.48);z-index:100000}.wp-org-admin-modal.is-open{display:flex}.wp-org-admin-modal-dialog{width:min(640px,100%);max-height:calc(100vh - 48px);overflow:auto;padding:24px;border-radius:20px;background:#fff;box-shadow:0 28px 70px rgba(15,23,42,.28)}.wp-org-admin-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.wp-org-admin-modal-header h3{margin:0 0 4px;font-size:22px;line-height:1.2}.wp-org-admin-modal-close{border:0;background:transparent;font-size:26px;line-height:1;cursor:pointer;color:#64748b}.wp-org-admin-modal-grid{display:grid;gap:16px}.wp-org-admin-modal-section{padding:18px;border:1px solid #e2e8f0;border-radius:16px;background:#f8fafc}.wp-org-admin-modal-section h4{margin:0 0 12px;font-size:15px}.wp-org-admin-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.wp-org-admin-open-modal{white-space:nowrap}@media (max-width:960px){.wp-org-admin-hero{padding:20px}.wp-org-admin-card{padding:18px}.wp-org-admin-fields-toolbar{align-items:stretch}.wp-org-admin-fields-toolbar .button{width:100%;justify-content:center}.wp-org-admin .form-table,.wp-org-admin .form-table tbody,.wp-org-admin .form-table tr,.wp-org-admin .form-table th,.wp-org-admin .form-table td{display:block;width:100%}.wp-org-admin .form-table th{padding-bottom:6px}.wp-org-admin .form-table td{padding-top:0}.wp-org-admin-modal{padding:14px}.wp-org-admin-modal-dialog{padding:18px}}');
+        wp_add_inline_script(
+            'jquery-core',
+            <<<'JS'
 jQuery(function($){
+    function slugifyFieldKey(label) {
+        return (label || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .replace(/_+/g, '_');
+    }
+
+    function fieldTypeNeedsOptions(type) {
+        return ['select', 'radio', 'checkbox'].indexOf(type) !== -1;
+    }
+
+    function syncFieldKey($row) {
+        var $labelInput = $row.find('.wp-org-field-label');
+        var $keyInput = $row.find('.wp-org-field-key');
+        var $keyPreview = $row.find('.wp-org-field-key-preview');
+        var key = slugifyFieldKey($labelInput.val());
+
+        $keyInput.val(key);
+        $keyPreview.text(key ? 'ID: ' + key : 'ID akan dibuat otomatis dari label');
+    }
+
+    function syncOptionState($row) {
+        var type = $row.find('.wp-org-field-type').val();
+        var $optionsCell = $row.find('.wp-org-field-options-cell');
+        var shouldShow = fieldTypeNeedsOptions(type);
+        $optionsCell.toggleClass('is-hidden', !shouldShow);
+    }
+
     function syncRowState($row) {
         var isEnabled = $row.find('.wp-org-field-enabled').is(':checked');
         $row.toggleClass('wp-org-field-row-disabled', !isEnabled);
+        syncFieldKey($row);
+        syncOptionState($row);
     }
 
     $(document).on('click', '#wp-org-add-field', function() {
@@ -532,6 +573,14 @@ jQuery(function($){
 
     $(document).on('change', '.wp-org-field-enabled', function() {
         syncRowState($(this).closest('tr'));
+    });
+
+    $(document).on('change', '.wp-org-field-type', function() {
+        syncOptionState($(this).closest('tr'));
+    });
+
+    $(document).on('input', '.wp-org-field-label', function() {
+        syncFieldKey($(this).closest('tr'));
     });
 
     $('.wp-org-fields-table tbody tr').each(function() {
@@ -578,7 +627,7 @@ jQuery(function($){
     });
 });
 JS
-);
+        );
     }
 
     private function render_member_action_modal($user, $statuses, $status, $note, $premium_statuses, $premium_status)
@@ -635,6 +684,8 @@ JS
             'email' => 'Email',
             'number' => 'Number',
             'date' => 'Date',
+            'image' => 'Image',
+            'file' => 'File',
             'select' => 'Select',
             'radio' => 'Radio',
             'checkbox' => 'Checkbox',
@@ -651,12 +702,11 @@ JS
         $row_class = !empty($field['enabled']) ? '' : ' class="wp-org-field-row-disabled"';
 
         return '<tr' . $row_class . '>'
-            . '<td><input type="hidden" class="wp-org-field-delete" name="fields[' . esc_attr((string) $index) . '][_delete]" value="0"><input type="text" name="fields[' . esc_attr((string) $index) . '][key]" value="' . esc_attr($field['key']) . '" placeholder="mis. full_name"></td>'
-            . '<td><input type="text" name="fields[' . esc_attr((string) $index) . '][label]" value="' . esc_attr($field['label']) . '" placeholder="Label field"></td>'
-            . '<td><select name="fields[' . esc_attr((string) $index) . '][type]">' . $type_options . '</select></td>'
-            . '<td><textarea name="fields[' . esc_attr((string) $index) . '][options]" placeholder="Satu opsi per baris">' . esc_textarea($field['options'] ?? '') . '</textarea></td>'
-            . '<td><input type="checkbox" name="fields[' . esc_attr((string) $index) . '][required]" value="1"' . checked(!empty($field['required']), true, false) . '></td>'
-            . '<td><input type="checkbox" class="wp-org-field-enabled" name="fields[' . esc_attr((string) $index) . '][enabled]" value="1"' . checked(!empty($field['enabled']), true, false) . '></td>'
+            . '<td><input type="hidden" class="wp-org-field-delete" name="fields[' . esc_attr((string) $index) . '][_delete]" value="0"><input type="hidden" class="wp-org-field-key" name="fields[' . esc_attr((string) $index) . '][key]" value="' . esc_attr($field['key']) . '"><input type="text" class="wp-org-field-label" name="fields[' . esc_attr((string) $index) . '][label]" value="' . esc_attr($field['label']) . '" placeholder="Label field"><p class="wp-org-admin-field-id wp-org-field-key-preview">ID: ' . esc_html($field['key']) . '</p></td>'
+            . '<td><select class="wp-org-field-type" name="fields[' . esc_attr((string) $index) . '][type]">' . $type_options . '</select></td>'
+            . '<td class="wp-org-field-options-cell"><div class="wp-org-field-options-wrap"><textarea name="fields[' . esc_attr((string) $index) . '][options]" placeholder="Satu opsi per baris">' . esc_textarea($field['options'] ?? '') . '</textarea><p class="wp-org-admin-help">Dipakai untuk select, radio, dan checkbox</p></div></td>'
+            . '<td><label class="wp-org-admin-switch"><input type="checkbox" name="fields[' . esc_attr((string) $index) . '][required]" value="1"' . checked(!empty($field['required']), true, false) . '></label></td>'
+            . '<td><label class="wp-org-admin-switch"><input type="checkbox" class="wp-org-field-enabled" name="fields[' . esc_attr((string) $index) . '][enabled]" value="1"' . checked(!empty($field['enabled']), true, false) . '></label></td>'
             . '<td><button type="button" class="button-link-delete wp-org-remove-field">Hapus</button></td>'
             . '</tr>';
     }
