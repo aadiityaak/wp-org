@@ -56,7 +56,9 @@ class Members
             foreach ($users as $user) {
                 $member_status = MemberData::get_status($user->ID);
                 $region = trim(get_user_meta($user->ID, 'wp_org_city_name', true) . ', ' . get_user_meta($user->ID, 'wp_org_province_name', true), ', ');
-                echo '<tr><td>' . esc_html($user->display_name) . '</td><td>' . esc_html($user->user_email) . '</td><td><span class="wp-org-status wp-org-status-' . esc_attr($member_status) . '">' . esc_html($statuses[$member_status] ?? $member_status) . '</span></td><td>' . esc_html($region ?: '-') . '</td></tr>';
+                $premium_status = MemberData::get_premium_status($user->ID);
+                $premium_label = MemberData::get_premium_statuses()[$premium_status] ?? $premium_status;
+                echo '<tr><td>' . esc_html($user->display_name) . '<br><small>' . esc_html($premium_label) . '</small></td><td>' . esc_html($user->user_email) . '</td><td><span class="wp-org-status wp-org-status-' . esc_attr($member_status) . '">' . esc_html($statuses[$member_status] ?? $member_status) . '</span></td><td>' . esc_html($region ?: '-') . '</td></tr>';
             }
         }
 

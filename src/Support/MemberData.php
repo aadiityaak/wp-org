@@ -53,6 +53,28 @@ class MemberData
         update_user_meta($user_id, 'wp_org_status', $status);
     }
 
+    public static function get_premium_statuses()
+    {
+        return [
+            'none' => 'Belum Premium',
+            'pending' => 'Menunggu Verifikasi',
+            'active' => 'Premium Aktif',
+            'rejected' => 'Ditolak',
+        ];
+    }
+
+    public static function get_premium_status($user_id)
+    {
+        $status = get_user_meta($user_id, 'wp_org_premium_status', true);
+
+        return $status ? $status : 'none';
+    }
+
+    public static function update_premium_status($user_id, $status)
+    {
+        update_user_meta($user_id, 'wp_org_premium_status', $status);
+    }
+
     public static function save_profile_fields($user_id, $data)
     {
         $fields = self::get_registration_fields();

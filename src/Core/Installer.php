@@ -35,6 +35,18 @@ class Installer
                 'require_approval' => 1,
                 'members_page_public' => 0,
                 'login_redirect' => '',
+                'premium_fee' => 150000,
+            ]);
+        }
+
+        if (!get_option('wp_org_payment_banks')) {
+            update_option('wp_org_payment_banks', [
+                [
+                    'bank_name' => 'BCA',
+                    'account_name' => 'Organisasi Contoh',
+                    'account_number' => '1234567890',
+                    'enabled' => 1,
+                ],
             ]);
         }
     }
