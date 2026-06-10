@@ -4,6 +4,22 @@ namespace WpOrg\Support;
 
 class Captcha
 {
+    public function get_settings()
+    {
+        $settings = get_option('captcha_velocity', []);
+
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        return [
+            'enabled' => !empty($settings['aktif']),
+            'provider' => sanitize_key($settings['provider'] ?? 'google'),
+            'site_key' => sanitize_text_field($settings['sitekey'] ?? ''),
+            'secret_key' => sanitize_text_field($settings['secretkey'] ?? ''),
+        ];
+    }
+
     public function register()
     {
         add_action('wp_enqueue_scripts', [$this, 'register_google_script']);
@@ -11,8 +27,8 @@ class Captcha
 
     public function register_google_script()
     {
-        $settings = get_option('wp_org_captcha_settings', []);
-        if (empty($settings['enabled']) || empty($settings['site_key'])) {
+        $settings = $this->get_settings();
+        if (empty($settings['enabled']) || $settings['provider'] !== 'google' || empty($settings['site_key'])) {
             return;
         }
 
@@ -21,15 +37,29 @@ class Captcha
 
     public function is_enabled()
     {
-        $settings = get_option('wp_org_captcha_settings', []);
-        return !empty($settings['enabled']) && !empty($settings['site_key']) && !empty($settings['secret_key']);
+        $settings = $this->get_settings();
+
+        if (empty($settings['enabled'])) {
+            return false;
+        }
+
+        if ($settings['provider'] === 'google') {
+            return !empty($settings['site_key']) && !empty($settings['secret_key']);
+        }
+
+        return $settings['provider'] === 'image';
     }
 
     public function render($form_id)
     {
-        $settings = get_option('wp_org_captcha_settings', []);
+        $settings = $this->get_settings();
         if (!$this->is_enabled()) {
             return '';
+        }
+
+        if ($settings['provider'] === 'image') {
+            $token = wp_generate_password(20, false, false);
+            return '<div class="wp-org-captcha-image"><input type="hidden" name="vd_captcha_token" value="' . esc_attr($token) . '"><img src="' . esc_url(admin_url('admin-ajax.php?action=vd_captcha_image&token=' . urlencode($token))) . '" alt="captcha" style="border:1px solid #dcdcde;border-radius:8px;height:44px"><p><input type="text" name="vd_captcha_input" placeholder="Masukkan captcha" autocomplete="off"></p></div>';
         }
 
         wp_enqueue_script('wp-org-recaptcha');
@@ -43,12 +73,31 @@ class Captcha
             return true;
         }
 
+        $settings = $this->get_settings();
+
+        if ($settings['provider'] === 'image') {
+            $token = isset($_POST['vd_captcha_token']) ? sanitize_text_field(wp_unslash($_POST['vd_captcha_token'])) : '';
+            $input = isset($_POST['vd_captcha_input']) ? sanitize_text_field(wp_unslash($_POST['vd_captcha_input'])) : '';
+
+            if ($token === '' || $input === '') {
+                return new \WP_Error('captcha_required', 'Captcha wajib diisi.');
+            }
+
+            $stored = get_transient('vd_captcha_' . $token);
+            if (!$stored || strtolower($stored) !== strtolower($input)) {
+                return new \WP_Error('captcha_invalid', 'Captcha tidak valid.');
+            }
+
+            delete_transient('vd_captcha_' . $token);
+
+            return true;
+        }
+
         $response = isset($_POST['g-recaptcha-response']) ? sanitize_text_field(wp_unslash($_POST['g-recaptcha-response'])) : '';
         if ($response === '') {
             return new \WP_Error('captcha_required', 'Captcha wajib divalidasi.');
         }
 
-        $settings = get_option('wp_org_captcha_settings', []);
         $remote_ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
         $result = wp_remote_post('https://www.google.com/recaptcha/api/siteverify', [
             'timeout' => 15,
@@ -64,10 +113,7 @@ class Captcha
         }
 
         $body = json_decode(wp_remote_retrieve_body($result), true);
-        if (empty($body['success'])) {
-            return new \WP_Error('captcha_invalid', 'Captcha tidak valid.');
-        }
 
-        return true;
+        return !empty($body['success']) ? true : new \WP_Error('captcha_invalid', 'Captcha tidak valid.');
     }
 }

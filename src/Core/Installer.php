@@ -30,14 +30,6 @@ class Installer
             ]);
         }
 
-        if (!get_option('wp_org_captcha_settings')) {
-            update_option('wp_org_captcha_settings', [
-                'enabled' => 0,
-                'site_key' => '',
-                'secret_key' => '',
-            ]);
-        }
-
         if (!get_option('wp_org_general_settings')) {
             update_option('wp_org_general_settings', [
                 'require_approval' => 1,

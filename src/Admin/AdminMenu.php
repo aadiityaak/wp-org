@@ -102,7 +102,9 @@ class AdminMenu
         }
 
         $general = get_option('wp_org_general_settings', []);
-        $captcha = get_option('wp_org_captcha_settings', []);
+        $velocity_captcha = get_option('captcha_velocity', []);
+        $captcha_enabled = !empty($velocity_captcha['aktif']);
+        $captcha_provider = sanitize_text_field($velocity_captcha['provider'] ?? 'google');
 
         echo '<div class="wrap"><h1>Pengaturan WP Org</h1><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('wp_org_save_settings');
@@ -111,9 +113,10 @@ class AdminMenu
         echo '<tr><th scope="row">Butuh Approval Admin</th><td><input type="checkbox" name="general[require_approval]" value="1"' . checked(!empty($general['require_approval']), true, false) . '></td></tr>';
         echo '<tr><th scope="row">Daftar Anggota Publik</th><td><input type="checkbox" name="general[members_page_public]" value="1"' . checked(!empty($general['members_page_public']), true, false) . '></td></tr>';
         echo '<tr><th scope="row">Login Redirect URL</th><td><input class="regular-text" type="url" name="general[login_redirect]" value="' . esc_attr($general['login_redirect'] ?? '') . '"></td></tr>';
-        echo '<tr><th scope="row">Captcha Aktif</th><td><input type="checkbox" name="captcha[enabled]" value="1"' . checked(!empty($captcha['enabled']), true, false) . '></td></tr>';
-        echo '<tr><th scope="row">Captcha Site Key</th><td><input class="regular-text" type="text" name="captcha[site_key]" value="' . esc_attr($captcha['site_key'] ?? '') . '"></td></tr>';
-        echo '<tr><th scope="row">Captcha Secret Key</th><td><input class="regular-text" type="text" name="captcha[secret_key]" value="' . esc_attr($captcha['secret_key'] ?? '') . '"></td></tr>';
+        echo '<tr><th scope="row">Captcha</th><td>';
+        echo $captcha_enabled ? '<p>Tersambung ke `velocity-addons` dan saat ini aktif dengan provider <strong>' . esc_html($captcha_provider) . '</strong>.</p>' : '<p>Captcha mengikuti pengaturan plugin `velocity-addons` dan saat ini belum aktif.</p>';
+        echo '<p><a class="button-secondary" href="' . esc_url(admin_url('admin.php?page=velocity_captcha_settings')) . '">Buka Pengaturan Captcha Velocity Addons</a></p>';
+        echo '</td></tr>';
         echo '</tbody></table>';
         submit_button('Simpan Pengaturan');
         echo '</form></div>';
@@ -169,18 +172,11 @@ class AdminMenu
         }
 
         $general = isset($_POST['general']) ? (array) wp_unslash($_POST['general']) : [];
-        $captcha = isset($_POST['captcha']) ? (array) wp_unslash($_POST['captcha']) : [];
 
         update_option('wp_org_general_settings', [
             'require_approval' => !empty($general['require_approval']) ? 1 : 0,
             'members_page_public' => !empty($general['members_page_public']) ? 1 : 0,
             'login_redirect' => esc_url_raw($general['login_redirect'] ?? ''),
-        ]);
-
-        update_option('wp_org_captcha_settings', [
-            'enabled' => !empty($captcha['enabled']) ? 1 : 0,
-            'site_key' => sanitize_text_field($captcha['site_key'] ?? ''),
-            'secret_key' => sanitize_text_field($captcha['secret_key'] ?? ''),
         ]);
 
         wp_safe_redirect(admin_url('admin.php?page=wp-org-settings'));
