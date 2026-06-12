@@ -1,0 +1,11 @@
+{
+  "name": "wp-org",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.0"
+  }
+}
